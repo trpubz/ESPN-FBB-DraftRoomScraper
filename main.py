@@ -12,8 +12,8 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 myMemberId = '{3D596368-E046-4194-8C20-C0CB4F2E8BBD}'  # constant
-leagueId = '2116768487'  # changes with league
-teamId = '10'  # changes with league
+leagueId = '1856747168'  # changes with league
+teamId = '7'  # changes with league
 baseUrl = 'https://fantasy.espn.com/baseball/draft?leagueId=' + leagueId + '&seasonId=2022&teamId=' + teamId + \
           '&memberId=' + myMemberId
 
