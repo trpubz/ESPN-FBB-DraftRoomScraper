@@ -92,31 +92,31 @@ def sesh():
                 pickTables = driver.find_element(By.CSS_SELECTOR, pickTableCSS)
                 # gets all the player columns in the pick tables.
                 draftedPlayerCols = pickTables.find_elements(By.CSS_SELECTOR, draftedPlayerColCSS)
-                # print(f'player rows has {len(draftedPlayerRows)} elements')
-                # print(f'first element is {draftedPlayerRows[0].text}')
-                tempDraftedPlayersList = list()  # creates a new list every time the tab is clicked on
                 # iterate through each row in the drafted players column
                 for i in draftedPlayerCols:
+                    # get playerid
                     draftedPlayerId = i.find_element(By.CSS_SELECTOR, 'div.jsx-3743397412.player-headshot > '
-                                                                      'img.jsx-3743397412') \
-                        .get_attribute('src').rsplit("full/")[1].rsplit('.png')[0]
+                                                                                            'img.jsx-3743397412') \
+                                                            .get_attribute('src').rsplit("full/")[1].rsplit('.png')[0]
+                    # check to see if drafted player has already been deposited into the draftedPlayers list
                     if player_has_been_drafted(draftedPlayerId):
-                        continue
+                        continue  # skip to next iteration if player has already been deposited
                     else:
                         draftedPlayerTemplate['espnPlayerId'] = draftedPlayerId
+                        # get winning team element
                         winningTeam = driver.find_element(
                             locate_with(By.CSS_SELECTOR, 'div.public_fixedDataTableCell_cellContent').to_right_of(i))
                         draftedPlayerTemplate['winningTeam'] = winningTeam.text
+                        # get winning bid element
                         winningBid = driver.find_element(
                             locate_with(By.CSS_SELECTOR, 'div.public_fixedDataTableCell_cellContent').to_right_of(
                                 winningTeam))
                         draftedPlayerTemplate['winningBid'] = winningBid.text
-
-                    draftedPlayers.append(draftedPlayerTemplate)
+                        draftedPlayers.append(draftedPlayerTemplate)
+                        print(f'just added {draftedPlayerTemplate} to draftedPlayers')
 
                 # click back on the 'Players' tab
                 driver.find_element(By.XPATH, playerButtonXPath).click()
-                print(draftedPlayers)
 
             # updates decision parameters
             lastPlayerOnBlock = currentPlayerOnBlock
