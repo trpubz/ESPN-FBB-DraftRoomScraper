@@ -1,8 +1,10 @@
 # by pubins.taylor
 # ESPN-FBB-DraftRoomScraper
-# main.py v0.52
+# main.py v0.72
+# fully enabled dictionary storage of scrapped elements
+# next Flask incorporation
 # init 02APR2022
-# last update 06APR2022
+# last update 08APR2022
 
 from selenium import webdriver
 from selenium.common.exceptions import *
@@ -12,7 +14,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 myMemberId = '{3D596368-E046-4194-8C20-C0CB4F2E8BBD}'  # constant
-leagueId = '1984622310'  # changes with league
+leagueId = '1728317835'  # changes with league
 teamId = '5'  # changes with league
 baseUrl = 'https://fantasy.espn.com/baseball/draft?leagueId=' + leagueId + '&seasonId=2022&teamId=' + teamId + \
           '&memberId=' + myMemberId
@@ -43,34 +45,24 @@ auctionAction = {
     "highestBidder": "",
     "highestBid": ""
 }
-draftedPlayerTemplate = {
-    "espnPlayerId": "",
-    "winningTeam": "",
-    "winningBid": ""
-}
-draftedPlayers = list(dict())
+draftedPlayers = list()
 
 
 def sesh():
-    # options = Options().add_argument(
-    #     'user-data-dir=/var/folders/nz/57m0v30s0kqdtdm5876x20qw0000gn/T/.com.google.Chrome.2M7yJR')
-    driver = webdriver.Chrome()
-    driver.get(baseUrl)
-    driver.refresh()
+    global draftedPlayers
+    driver = driver_config()
     driver.implicitly_wait(25)
 
-    # driver.find_element(By.CSS_SELECTOR, 'div:nth-child(1) > div > label > span.input-wrapper > input').send_keys("taylor.pubins@me.com")
-    # driver.find_element(By.CSS_SELECTOR, 'div:nth-child(2) > div > label > span.input-wrapper > input').send_keys("Trpamp16")
-
-    # driver.find_element(By.CSS_SELECTOR, 'button[type="submit"]').click()
     lastPlayerOnBlock = ''
     # provide default value
     currentPlayerOnBlock = 'trp'
 
+    # TODO implement a local service with Flask and 'GET' draftedPlayers and auctionAction
+
     while True:
         try:
             # when a final bid is placed, the clock resets to a 9-second count down
-            time.sleep(8)
+            time.sleep(3)
             # grab the player's mugshot link w/ the player's id embedded then slice string to get playerid.
             # player id value is nested between //full/ & //.png hyperlink elements.
             # 2 splits taking the 2nd index and then first index produces the playerid.
@@ -93,16 +85,20 @@ def sesh():
                 # gets all the player columns in the pick tables.
                 draftedPlayerCols = pickTables.find_elements(By.CSS_SELECTOR, draftedPlayerColCSS)
                 # iterate through each row in the drafted players column
+                print(f'currently {len(draftedPlayerCols)} players on the pick history table '
+                      f'and {len(draftedPlayers)} players scraped.')
                 for i in draftedPlayerCols:
                     # get playerid
-                    draftedPlayerId = i.find_element(By.CSS_SELECTOR, 'div.jsx-3743397412.player-headshot > '
-                                                                                            'img.jsx-3743397412') \
-                                                            .get_attribute('src').rsplit("full/")[1].rsplit('.png')[0]
+                    draftedPlayerId = \
+                    i.find_element(By.CSS_SELECTOR, 'div.jsx-3743397412.player-headshot > img.jsx-3743397412') \
+                        .get_attribute('src').rsplit("full/")[1].rsplit('.png')[0]
+                    draftedPlayerName = i.find_element(By.CSS_SELECTOR, 'span.playerinfo__playername.truncate').text
                     # check to see if drafted player has already been deposited into the draftedPlayers list
                     if player_has_been_drafted(draftedPlayerId):
+                        # print(f'{draftedPlayerName} has been deposited, will skip to next iteration.')
                         continue  # skip to next iteration if player has already been deposited
                     else:
-                        draftedPlayerTemplate['espnPlayerId'] = draftedPlayerId
+                        draftedPlayerTemplate = {'espnPlayerId': draftedPlayerId}
                         # get winning team element
                         winningTeam = driver.find_element(
                             locate_with(By.CSS_SELECTOR, 'div.public_fixedDataTableCell_cellContent').to_right_of(i))
@@ -113,18 +109,17 @@ def sesh():
                                 winningTeam))
                         draftedPlayerTemplate['winningBid'] = winningBid.text
                         draftedPlayers.append(draftedPlayerTemplate)
-                        print(f'just added {draftedPlayerTemplate} to draftedPlayers')
+                        print(f'just added {draftedPlayerName} {draftedPlayerTemplate} to draftedPlayers')
 
                 # click back on the 'Players' tab
                 driver.find_element(By.XPATH, playerButtonXPath).click()
-
+                print(f'currently {len(draftedPlayerCols)} players on the pick history table'
+                      f'and {len(draftedPlayers)} players scraped.')
             # updates decision parameters
             lastPlayerOnBlock = currentPlayerOnBlock
 
         # important to catch the error inside the while loop so the program can continue when elements are not present
         except Exception as e:
-            if e == NoSuchWindowException:
-                break
             template = "Error caught! {0} occurred.\nDetails: {1!r}"
             message = template.format(type(e).__name__, e.args)
             print(message)
@@ -132,12 +127,26 @@ def sesh():
     driver.close()
 
 
+def driver_config():
+    # options = Options().add_argument(
+    #     'user-data-dir=/var/folders/nz/57m0v30s0kqdtdm5876x20qw0000gn/T/.com.google.Chrome.2M7yJR')
+    driver = webdriver.Chrome()
+    driver.get(baseUrl)
+    driver.implicitly_wait(1)
+    driver.refresh()
+
+    return driver
+
+
 def player_has_been_drafted(playerid):
+    if len(draftedPlayers) == 0:
+        return False
+
     for p in draftedPlayers:
         if p['espnPlayerId'] == playerid:
             return True
-        else:
-            return False
+
+    return False
 
 
 if __name__ == '__main__':
