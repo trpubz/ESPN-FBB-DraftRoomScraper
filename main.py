@@ -1,8 +1,8 @@
 # by pubins.taylor
 # ESPN-FBB-DraftRoomScraper
-# main.py v0.72
+# main.py v0.73
 # fully enabled dictionary storage of scrapped elements
-# next Flask incorporation
+# Flask incorporation
 # init 02APR2022
 # last update 08APR2022
 
@@ -11,6 +11,7 @@ from selenium.common.exceptions import *
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.relative_locator import locate_with
 from selenium.webdriver.chrome.options import Options
+from flask import Flask
 import time
 
 myMemberId = '{3D596368-E046-4194-8C20-C0CB4F2E8BBD}'  # constant
@@ -57,7 +58,15 @@ def sesh():
     # provide default value
     currentPlayerOnBlock = 'trp'
 
-    # TODO implement a local service with Flask and 'GET' draftedPlayers and auctionAction
+    app = Flask(__name__)
+
+    @app.route('/action')
+    def action():
+        return auctionAction
+
+    @app.route('/pickHistory')
+    def pick_history():
+        return draftedPlayers
 
     while True:
         try:
@@ -149,5 +158,18 @@ def player_has_been_drafted(playerid):
     return False
 
 
+def flashk():
+    app = Flask(__name__)
+
+    @app.route('/action')
+    def action():
+        return auctionAction
+
+    @app.route('/pickHistory')
+    def pick_history():
+        return draftedPlayers
+
+
 if __name__ == '__main__':
+    flashk()
     sesh()
