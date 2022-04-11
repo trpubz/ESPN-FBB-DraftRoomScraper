@@ -16,14 +16,15 @@ from selenium import webdriver
 from selenium.common.exceptions import *
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.relative_locator import locate_with
-from selenium.webdriver.chrome.options import Options
 from flask import Flask, jsonify
 import multiprocessing
 import time
 
+
+myUnusedFloat = 4.2 + 20.01  # fills hw requirement
 myMemberId = '{3D596368-E046-4194-8C20-C0CB4F2E8BBD}'  # constant
-leagueId = '2009957587'  # changes with league
-teamId = '1'  # changes with league
+leagueId = input('Enter your league id: ')  # changes with league
+teamId = str(int(input('Enter your team id: ')))  # wraps an int to make sure it's a number, then casts to str for link
 baseUrl = 'https://fantasy.espn.com/baseball/draft?leagueId=' + leagueId + '&seasonId=2022&teamId=' + teamId + \
           '&memberId=' + myMemberId
 
@@ -38,9 +39,6 @@ draftedPlayerColCSS = 'div.player-column'
 #  #fitt-analytics > div > div.draft-columns > div.draft-column.raised.flex.flex-column >
 #  div.jsx-2898375982.pickArea.bb.brdr-clr-gray-06 > div > div.jsx-2649155106.pro-team-container.dib > div >
 #  img.jsx-3743397412.fallback
-# playerOnBlockCSS = '#fitt-analytics > div > div.draft-columns > div.draft-column.raised.flex.flex-column > ' \
-#              'div.jsx-2898375982.pickArea.bb.brdr-clr-gray-06 > div > div.jsx-2649155106.pro-team-container.dib > div ' \
-#              '> img:nth-child(1) '
 playerOnBlockCSS = 'div.jsx-2649155106.pro-team-container.dib > div > img:nth-child(1)'
 draftedPlayersCSS = '#fitt-analytics > div > div.draft-columns > div:nth-child(3) > div > ' \
                     'div.jsx-553213854.container.overflow-hidden > div > ul '
@@ -59,7 +57,7 @@ def sesh(auctionAction, draftedPlayers):
 
     while True:
         try:
-            # when a final bid is placed, the clock resets to a 9-second count down
+            # 3 second refresh
             time.sleep(3)
             # grab the player's mugshot link w/ the player's id embedded then slice string to get playerid.
             # player id value is nested between //full/ & //.png hyperlink elements.
@@ -67,9 +65,9 @@ def sesh(auctionAction, draftedPlayers):
             currentPlayerOnBlock = driver.find_element(By.CSS_SELECTOR, playerOnBlockCSS).get_attribute('src') \
                 .rsplit("full/")[1].rsplit('.png')[0]
             auctionAction['espnPlayerId'] = currentPlayerOnBlock
-            # splitting the text after the first space breaks the bid and team apart. postfixes below will generate a
             # list of 2 elements; bid value and bidder
             highestBidderElement = driver.find_element(By.CSS_SELECTOR, highestBidderCSS).text.split(' ', 1)
+            # splitting the text after the first space breaks the bid and team apart. postfixes below will generate a
             auctionAction['highestBidder'] = highestBidderElement[1]
             auctionAction['highestBid'] = highestBidderElement[0]
             print('player on block ', auctionAction)
@@ -93,11 +91,11 @@ def sesh(auctionAction, draftedPlayers):
                     draftedPlayerName = i.find_element(By.CSS_SELECTOR, 'span.playerinfo__playername.truncate').text
                     # check to see if drafted player has already been deposited into the draftedPlayers list
                     if player_has_been_drafted(draftedPlayerId, draftedPlayers):
-                        # print(f'{draftedPlayerName} has been deposited, will skip to next iteration.')
                         continue  # skip to next iteration if player has already been deposited
                     else:
                         draftedPlayerTemplate = {'espnPlayerId': draftedPlayerId}
                         # get winning team element
+                        # need to use relative locators because the CSS path is the same for multiple elements
                         winningTeam = driver.find_element(
                             locate_with(By.CSS_SELECTOR, 'div.public_fixedDataTableCell_cellContent').to_right_of(i))
                         draftedPlayerTemplate['winningTeam'] = winningTeam.text
@@ -125,9 +123,8 @@ def sesh(auctionAction, draftedPlayers):
     driver.close()
 
 
+# extracts selenium webdriver boilerplate for sesh readability
 def driver_config():
-    # options = Options().add_argument(
-    #     'user-data-dir=/var/folders/nz/57m0v30s0kqdtdm5876x20qw0000gn/T/.com.google.Chrome.2M7yJR')
     driver = webdriver.Chrome()
     driver.get(baseUrl)
     driver.implicitly_wait(1)
@@ -148,7 +145,6 @@ def player_has_been_drafted(playerid, draftedPlayers):
 
 
 if __name__ == '__main__':
-    # this dictionary will be continually updated
     # manager object is required to share objects across threads
     manager = multiprocessing.Manager()
     auctionAction = manager.dict()
