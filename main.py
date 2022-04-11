@@ -23,21 +23,6 @@ import time
 
 myUnusedFloat = 4.2 + 20.01  # fills hw requirement
 myMemberId = '{3D596368-E046-4194-8C20-C0CB4F2E8BBD}'  # constant
-leagueId = ''  # changes with league
-teamId = ''  #
-baseUrl = ''
-
-
-def set_envr():
-    global leagueId
-    global teamId
-    global baseUrl
-    leagueId = input('Enter your league id: ')  # changes with league
-    teamId = str(
-        int(input('Enter your team id: ')))  # wraps an int to make sure it's a number, then casts to str for link
-    baseUrl = 'https://fantasy.espn.com/baseball/draft?leagueId=' + leagueId + '&seasonId=2022&teamId=' + teamId + \
-              '&memberId=' + myMemberId
-
 
 bidCSSPath = 'div.current-amount'  # deprecated as of v0.12
 playerButtonXPath = '//*[@id="fitt-analytics"]/div/div[3]/div[2]/div[3]/div/nav/ul/li[1]/button'
@@ -59,8 +44,11 @@ highestBidderCSS = '#fitt-analytics > div > div.draft-columns > div.draft-column
 
 
 def sesh(auctionAction, draftedPlayers):
-    set_envr()
-    driver = driver_config()
+    leagueId = '1532962589' # changes with league
+    teamId = '8' # wraps an int to make sure it's a number, then casts to str for link
+    baseUrl = 'https://fantasy.espn.com/baseball/draft?leagueId=' + leagueId + '&seasonId=2022&teamId=' + teamId + \
+              '&memberId=' + myMemberId
+    driver = driver_config(baseUrl)
     driver.implicitly_wait(25)
 
     lastPlayerOnBlock = ''
@@ -136,7 +124,7 @@ def sesh(auctionAction, draftedPlayers):
 
 
 # extracts selenium webdriver boilerplate for sesh readability
-def driver_config():
+def driver_config(baseUrl):
     driver = webdriver.Chrome()
     driver.get(baseUrl)
     driver.implicitly_wait(1)
@@ -157,6 +145,8 @@ def player_has_been_drafted(playerid, draftedPlayers):
 
 
 if __name__ == '__main__':
+    x = input('ready to start? (y/n): ')
+    print('ready or not...here we go')
     # manager object is required to share objects across threads
     manager = multiprocessing.Manager()
     auctionAction = manager.dict()
